@@ -3,6 +3,19 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from transformers import BertModel
 
+# AI detector model/ use already available model first
+# https://huggingface.co/pritamdeb68/BERTAIDetector/blob/main/README.md
+# from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+# tokenizer = AutoTokenizer.from_pretrained("pritamdeb68/BERTAIDetector")
+# model = AutoModelForSequenceClassification.from_pretrained("pritamdeb68/BERTAIDetector")
+
+# text = "Your text here"
+# inputs = tokenizer(text, return_tensors="pt")
+# outputs = model(**inputs)
+# predictions = outputs.logits.argmax(dim=1).item()
+# print("AI-generated" if predictions == 1 else "Human-written")
+
 MAX_LEN = 512
 STRIDE = 512
 BATCH_SIZE = 16
