@@ -9,13 +9,8 @@ DOI_SAVE_PATH = "./data/doi_list.txt"
 INTERSECT_ID_SAVE_PATH = "./data/intersect_list.txt"
 
 def make_list_of_papers_authors():
-    year = 2023
-    paper_info_save_path = "./data/" + "paper_info_list_" + str(year) + ".txt"
-    #works = pyalex.Works().sample(100, random.randint(0, 100_000_000)).filter( publication_year = 2021, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).get()
-    #for work in works:
-    #    print(work["primary_location"]["pdf_url"])
-    # function to load the data
-    document_info, prev_author_list = load_paper_dict_from_file(paper_info_save_path)
+    paper_info_save_path = "./data/" + "paper_info_list.txt"
+    document_info, final_author = load_paper_dict_from_file(paper_info_save_path)
     author_list = list()
     # get the list of intersecting authors
     if os.path.isfile(INTERSECT_ID_SAVE_PATH):
@@ -29,64 +24,53 @@ def make_list_of_papers_authors():
         return
     # go through the authors works
     author_count = 0
+    skip_stop = False
     for author in author_list:
         author_count += 1
-        if author in prev_author_list:
+        if (author == final_author) or (final_author == None):
+            skip_stop = True
+        if skip_stop == False:
             continue
         print(author_count, author)
-        works = pyalex.Works().filter(**{"author.id": author}, publication_year = year, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).get()
+        works = pyalex.Works().filter_or(**{"author.id": author}, publication_year = [2021, 2023, 2025], has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).get()
         for work in works:
             key = work["doi"]
             if document_info.get(key) is None:
                 document_info[work["doi"]] = True
                 entry_list = list()
-                #print(work["doi"])
                 if work["primary_location"]["pdf_url"] is not None:
-                    #print(work["primary_location"]["pdf_url"])
                     entry_list.append(work["primary_location"]["pdf_url"])
-                    #document_info[work["doi"]].append(work["primary_location"]["pdf_url"])
                 else:
-                    #print("None")
                     entry_list.append("None")
-                    #document_info[work["doi"]].append("None")
+
                 if work["primary_location"]["source"] is not None:
-                    #print(work["primary_location"]["source"]["display_name"])
                     entry_list.append(work["primary_location"]["source"]["display_name"])
-                    #document_info[work["doi"]].append(work["primary_location"]["source"]["display_name"])
                 else:
-                    #print("None")
                     entry_list.append("None")
-                    #document_info[work["doi"]].append("None")
                 if len(work["authorships"][0]["countries"]) != 0:
-                    #print(work["authorships"][0]["countries"][0])
                     entry_list.append(work["authorships"][0]["countries"][0])
-                    #document_info[work["doi"]].append(work["authorships"][0]["countries"][0])
                 else:
-                    #print("None")
                     entry_list.append("None")
-                    #document_info[work["doi"]].append("None")
-                #print("\n")
-                #print(work["doi"], work["primary_location"]["pdf_url"], work["primary_location"]["source"]["display_name"], work["authorships"][0]["countries"])
+                entry_list.append(work["publication_year"])
                 # SAVE THE DATA (document info)
-                entry = "{}\t{}\t{}\t{}\t{}\n".format(author, key, entry_list[0], entry_list[1], entry_list[2])
-                #print(entry)
+                entry = "{}\t{}\t{}\t{}\t{}\t{}\n".format(author, key, entry_list[0], entry_list[1], entry_list[2], entry_list[3])
                 with open(paper_info_save_path, "a", encoding="utf-8") as f:
                     f.write(entry)
-
     return
 
 def load_paper_dict_from_file(path):
     paper_dict = dict()
-    author_list = list()
+    final_author = None
     if os.path.isfile(path):
         # open the file and load up the dict
         with open(path, 'r', encoding="utf-8") as file:
             for line in file:
                 line_array = line.strip().split("\t")
-                author_list.append(line_array[0])
+                final_author = line_array[0]
                 if paper_dict.get(line_array[1]) is None:
                     paper_dict[line_array[1]] = True
-    return paper_dict, author_list
+    print(final_author)
+    return paper_dict, final_author
 
 
 # Run this until, no new authors are found
@@ -202,21 +186,14 @@ def retrieve_pdf_from_doi(year):
         print(doi)
         out = "./data/" + str(year) + "/" + name.replace("/", "").replace(":", "") + ".pdf"
         paper_data = {'doi': doi}
-        save_pdf(paper_data, filepath=out)
+        #save_pdf(paper_data, filepath=out)
         print(out)
-        #scihub_download("https://doi.org/10.1145/3375633", out=out, paper_type="doi")
         break
     return
 
 def main():
-    #get_and_save_dois()
-    #work = pyalex.Works().filter(doi = "https://doi.org/10.1186/s12859-024-06020-0").get()
-    #pages = pyalex.Authors().filter(id = "https://openalex.org/A5060528195").get()
-    #count = 0
-    #print(pages)
     #find_intersecting_authors_2021_2023_2025()
     make_list_of_papers_authors()
-    #retrieve_pdf_from_doi(1983)
     return 0
 
 if __name__ == "__main__":  
