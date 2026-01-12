@@ -2,15 +2,46 @@
 import pyalex
 import os
 import random
-#from paperscraper.pdf import save_pdf
+from paperscraper.pdf import save_pdf
 #pip install git+https://github.com/titipata/scipdf_parser
 
 DOI_SAVE_PATH = "./data/doi_list.txt"
 INTERSECT_ID_SAVE_PATH = "./data/intersect_list.txt"
+PAPER_INFO_SAVE_PATH = "./data/paper_info_list.txt"
+PAPER_DOWNLOAD_SAVE_PATH = "./data/paper_download_list.txt"
+TOKEN_PATH = "./data/token.txt"
+
+def retrieve_pdf_from_list_of_papers():
+    document_info, _ = load_paper_dict_from_file(PAPER_INFO_SAVE_PATH, True)
+    saved_document_info, _ = load_paper_dict_from_file(PAPER_DOWNLOAD_SAVE_PATH, False)
+    paper_index = 0
+    skip_one = True
+    for document_key in document_info.keys():
+        if saved_document_info.get(document_key) is None:
+            if skip_one == True:
+                skip_one = False
+                continue
+            array = document_info[document_key].split("\t")
+            doi = array[1]
+            paper_data = {'doi': doi[16:]}
+            file_path_pdf = "./data/papers/" + str(paper_index) + ".pdf"
+            file_path_xml = "./data/papers/" + str(paper_index) + ".xml"
+            # try to obtain using the doi
+            save_pdf(paper_data, filepath=file_path_pdf, api_keys=TOKEN_PATH)
+            # check if file exists, if does not put fail, otherwise put file path
+            if os.path.isfile(file_path_pdf):
+                file_path = file_path_pdf
+            elif os.path.isfile(file_path_xml):
+                file_path = file_path_xml
+            else:
+                file_path = "fail"
+            with open(PAPER_DOWNLOAD_SAVE_PATH, "a", encoding="utf-8") as f:
+                    f.write(document_info[document_key] + "\t" + file_path + "\n")
+        paper_index += 1
+    return
 
 def make_list_of_papers_authors():
-    paper_info_save_path = "./data/" + "paper_info_list.txt"
-    document_info, final_author = load_paper_dict_from_file(paper_info_save_path)
+    document_info, final_author = load_paper_dict_from_file(PAPER_INFO_SAVE_PATH, False)
     author_list = list()
     # get the list of intersecting authors
     if os.path.isfile(INTERSECT_ID_SAVE_PATH):
@@ -54,11 +85,11 @@ def make_list_of_papers_authors():
                 entry_list.append(work["publication_year"])
                 # SAVE THE DATA (document info)
                 entry = "{}\t{}\t{}\t{}\t{}\t{}\n".format(author, key, entry_list[0], entry_list[1], entry_list[2], entry_list[3])
-                with open(paper_info_save_path, "a", encoding="utf-8") as f:
+                with open(PAPER_INFO_SAVE_PATH, "a", encoding="utf-8") as f:
                     f.write(entry)
     return
 
-def load_paper_dict_from_file(path):
+def load_paper_dict_from_file(path, all_info):
     paper_dict = dict()
     final_author = None
     if os.path.isfile(path):
@@ -68,7 +99,10 @@ def load_paper_dict_from_file(path):
                 line_array = line.strip().split("\t")
                 final_author = line_array[0]
                 if paper_dict.get(line_array[1]) is None:
-                    paper_dict[line_array[1]] = True
+                    if all_info == True:
+                        paper_dict[line_array[1]] = line.strip()
+                    else:
+                        paper_dict[line_array[1]] = True
     print(final_author)
     return paper_dict, final_author
 
@@ -167,33 +201,10 @@ def get_and_save_dois():
             f.writelines(doi_list)
     return
 
-def retrieve_pdf_from_doi(year):
-    # go through the doi list and get the releavant doi for the year and make a list
-    start = False
-    year_doi_list = list()
-    with open(DOI_SAVE_PATH, 'r') as file:
-        for line in file:
-            if line.strip() == str(year + 1):
-                break
-            if start == True:
-                year_doi_list.append(line.strip())
-            if line.strip() == str(year):
-                start = True
-    print(len(year_doi_list))
-    # try to download the doi, if fail do nothing if success put the file in year folder and save it to success list
-    for doi in year_doi_list:
-        name = doi
-        print(doi)
-        out = "./data/" + str(year) + "/" + name.replace("/", "").replace(":", "") + ".pdf"
-        paper_data = {'doi': doi}
-        #save_pdf(paper_data, filepath=out)
-        print(out)
-        break
-    return
-
 def main():
     #find_intersecting_authors_2021_2023_2025()
-    make_list_of_papers_authors()
+    #make_list_of_papers_authors()
+    retrieve_pdf_from_list_of_papers()
     return 0
 
 if __name__ == "__main__":  
