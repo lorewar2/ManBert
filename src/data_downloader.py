@@ -2,7 +2,7 @@
 import pyalex
 import os
 import random
-from paperscraper.pdf import save_pdf
+#from paperscraper.pdf import save_pdf
 #pip install git+https://github.com/titipata/scipdf_parser
 
 DOI_SAVE_PATH = "./data/doi_list.txt"
@@ -10,6 +10,86 @@ INTERSECT_ID_SAVE_PATH = "./data/intersect_list.txt"
 PAPER_INFO_SAVE_PATH = "./data/paper_info_list.txt"
 PAPER_DOWNLOAD_SAVE_PATH = "./data/paper_download_list.txt"
 TOKEN_PATH = "./data/token.txt"
+
+def display_all_required_info():
+    #print(2021, "paper count: ", pyalex.Works().filter(publication_year = 2021, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
+    #print(2023, "paper count: ", pyalex.Works().filter(publication_year = 2023, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
+    #print(2025, "paper count: ", pyalex.Works().filter(publication_year = 2025, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
+    country_dict = dict()
+    journal_dict = dict()
+    required_year = 2025
+    if os.path.isfile(PAPER_INFO_SAVE_PATH):
+        # open the file and load up the dict
+        with open(PAPER_INFO_SAVE_PATH, 'r', encoding="utf-8") as file:
+            for line in file:
+                line_array = line.strip().split("\t")
+                year = line_array[5]
+                country = line_array[4]
+                journal = line_array[3]
+                if year == str(required_year):
+                    if country_dict.get(country) is None:
+                        country_dict[country] = 1
+                    else:
+                        country_dict[country] += 1
+                    if journal_dict.get(journal) is None:
+                        journal_dict[journal] = 1
+                    else:
+                        journal_dict[journal] += 1
+    with open("./data/journal_" + str(required_year) + ".tsv", "w", encoding="utf-8") as f:
+        for journal_key in journal_dict.keys():
+            #print(journal_key, journal_dict[journal_key])
+            f.write(journal_key + "\t" + str(journal_dict[journal_key]) + "\n")
+    Africa = 0
+    North_America = 0
+    Central_America = 0
+    Caribbean = 0
+    South_America = 0
+    Asia = 0
+    Europe = 0
+    Oceania = 0
+    Other = 0
+
+    Africa_list = ["DZ", "AO", "BJ", "BW", "BF", "BI", "CV", "CM", "CF", "TD", "KM", "CG",
+                   "CD", "CI", "DJ", "EG", "GQ", "ER", "SZ", "ET", "GA", "GM", "GH", "GN",
+                   "GW", "KE", "LS", "LR", "LY", "MG", "MW", "ML", "MR", "MU", "MA", "MZ",
+                   "NA", "NE", "NG", "RW", "ST", "SN", "SC", "SL", "SO", "ZA", "SS", "SD",
+                   "TZ", "TG", "TN", "UG", "ZM", "ZW"]
+    North_America_list = ["CA", "US", "MX"]
+    Central_America_list = ["BZ", "CR", "SV", "GT", "HN", "NI", "PA"]
+    Caribbean_list = ["AG", "BS", "BB", "CU", "DM", "DO", "GD", "HT", "JM", "KN", "LC", "VC", "TT"]
+    South_America_list = ["AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"]
+    Asia_list = ["AF", "AM", "AZ", "BH", "BD", "BT", "BN", "KH", "CN", "CY", "GE", "IN", "ID", "IR", "IQ", "IL", "JP", "JO", "KZ", "KW", 
+                 "KG", "LA", "LB", "MY", "MV", "MN", "MM", "NP", "KP", "OM", "PK", "PH", "QA", "SA", "SG", "KR", "LK", "SY", "TW", "TJ", 
+                 "TH", "TL", "TR", "TM", "AE", "UZ", "VN", "YE"]
+    Europe_list = ["AL", "AD", "AT", "BY", "BE", "BA", "BG", "HR", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IS", 
+                    "IE", "IT", "LV", "LI", "LT", "LU", "MT", "MD", "MC", "ME", "NL", "MK", "NO", "PL", "PT", "RO", "RU", 
+                    "SM", "RS", "SK", "SI", "ES", "SE", "CH", "UA", "GB", "VA"]
+    Oceania_list = ["AU", "FJ", "KI", "MH", "FM", "NR", "NZ", "PW", "PG", "WS", "SB", "TO", "TV", "VU"]
+
+    with open("./data/country_" + str(required_year) + ".tsv", "w", encoding="utf-8") as f:
+        for country_key in country_dict.keys():
+            if country_key in Africa_list:
+                Africa += country_dict[country_key]
+            elif country_key in North_America_list:
+                North_America += country_dict[country_key]
+            elif country_key in Central_America_list:
+                Central_America += country_dict[country_key]
+            elif country_key in Caribbean_list:
+                Caribbean += country_dict[country_key]
+            elif country_key in South_America_list:
+                South_America += country_dict[country_key]
+            elif country_key in Asia_list:
+                Asia += country_dict[country_key]
+            elif country_key in Europe_list:
+                Europe += country_dict[country_key]
+            elif country_key in Oceania_list:
+                Oceania += country_dict[country_key]
+            else:
+                Other += country_dict[country_key]
+            #print(country_key, journal_dict[country_key])
+            f.write(country_key + "\t" + str(country_dict[country_key]) + "\n")
+    print("country counts,\nAfrica {}\nNorth America {}\nCentral America {}\nCarribean {}\nSouth America {}\nAsia {}\nEurope {}\nOceania {}\nOther {}".format(Africa, North_America, Central_America, Caribbean, South_America, Asia, Europe, Oceania, Other))
+
 
 def retrieve_pdf_from_list_of_papers():
     document_info, _ = load_paper_dict_from_file(PAPER_INFO_SAVE_PATH, True)
@@ -36,7 +116,7 @@ def retrieve_pdf_from_list_of_papers():
             else:
                 file_path = "fail"
             with open(PAPER_DOWNLOAD_SAVE_PATH, "a", encoding="utf-8") as f:
-                    f.write(document_info[document_key] + "\t" + file_path + "\n")
+                f.write(document_info[document_key] + "\t" + file_path + "\n")
         paper_index += 1
     return
 
@@ -204,7 +284,8 @@ def get_and_save_dois():
 def main():
     #find_intersecting_authors_2021_2023_2025()
     #make_list_of_papers_authors()
-    retrieve_pdf_from_list_of_papers()
+    #retrieve_pdf_from_list_of_papers()
+    display_all_required_info()
     return 0
 
 if __name__ == "__main__":  
