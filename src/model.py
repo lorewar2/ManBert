@@ -149,6 +149,5 @@ def score_long_document(text, model, tokenizer):
             attention_mask = chunk["attention_mask"].unsqueeze(0).to(DEVICE)
             score = model(input_ids, attention_mask)
             scores.append(score.item())
-
-    return max(scores)
+    return scores
 
