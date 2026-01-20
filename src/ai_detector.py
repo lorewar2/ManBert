@@ -18,11 +18,14 @@ def main():
     model = AutoModelForSequenceClassification.from_pretrained("AICodexLab/answerdotai-ModernBERT-base-ai-detector")
     # read the file, save lines  requried dir
     download_info = get_dir_info("./data/paper_download_list.txt")
+    ai_info = get_dir_info(AI_INFO_SAVE_PATH)
+    to_be_skipped = len(ai_info)
     count = 0
     for line in download_info:
         current_file = line.split("\t")[6]
         print(current_file)
-        if current_file == "fail":
+        if current_file == "fail" or count < to_be_skipped:
+            count += 1
             continue
         extracted_text = extract_text_from_pdf_xml(current_file)
         score = score_long_document(extracted_text, model, tokenizer)
@@ -67,7 +70,7 @@ def score_long_document(text, model, tokenizer):
             prediction = score.logits.argmax(dim=1).item()
             count += 1
             sum += float(prediction)
-    return (sum / count)
+    return (sum / (count + 1))
 
 def get_dir_info(file_path):
     line_array = []
