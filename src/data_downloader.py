@@ -10,13 +10,25 @@ DOI_SAVE_PATH = "./data/doi_list.txt"
 INTERSECT_ID_SAVE_PATH = "./data/intersect_list.txt"
 PAPER_INFO_SAVE_PATH = "./data/paper_info_list.txt"
 PAPER_DOWNLOAD_SAVE_PATH = "./data/paper_download_list.txt"
-AI_INFO_SAVE_PATH = "./data/ai_info_list.txt"
+AI_INFO_SAVE_PATH = "./data/hundred_k_list.txt"
+JOURNAL_FIELD_PATH = "./data/journal_list_with_fields.txt"
 TOKEN_PATH = "./data/token.txt"
 
 def display_all_required_info():
     #print(2021, "paper count: ", pyalex.Works().filter(publication_year = 2021, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
     #print(2023, "paper count: ", pyalex.Works().filter(publication_year = 2023, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
     #print(2025, "paper count: ", pyalex.Works().filter(publication_year = 2025, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
+    # load the journal fields
+    fields = ["Life Sciences", "Physical Sciences", "Engineering & Technology", "Social Sciences", "Humanities", "Business & Economics", "Multidisciplinary"]
+    journal_content_list = [[], [], [], [], [], [], []]
+    with open(JOURNAL_FIELD_PATH, 'r', encoding="utf-8") as file:
+        for line in file:
+            line_array = line.strip().split(",")
+            field = line_array[-1].strip()
+            journal = line_array[0].strip()
+            index = fields.index(field)
+            journal_content_list[index].append(journal)
+    # load the country regions
     country_content_list = [["DZ", "AO", "BJ", "BW", "BF", "BI", "CV", "CM", "CF", "TD", "KM", "CG", # Africa 
                     "CD", "CI", "DJ", "EG", "GQ", "ER", "SZ", "ET", "GA", "GM", "GH", "GN",
                     "GW", "KE", "LS", "LR", "LY", "MG", "MW", "ML", "MR", "MU", "MA", "MZ",
@@ -35,39 +47,60 @@ def display_all_required_info():
     ai_score_bin_empty = [[0] * 10, [0] * 10, [0] * 10]
     ai_score_bin = copy.deepcopy(ai_score_bin_empty)
     country_ai_scores = [copy.deepcopy(ai_score_bin_empty) for _ in range(7)]
-    country_dict = dict()
+    journal_ai_scores = [copy.deepcopy(ai_score_bin_empty) for _ in range(7)]
     journal_dict = dict()
     author_dict = dict()
-    
+    year_counts = [0, 0, 0]
+    paper_limit_for_year = 34_000
     if os.path.isfile(AI_INFO_SAVE_PATH):
         # open the file and load up the dict
         with open(AI_INFO_SAVE_PATH, 'r', encoding="utf-8") as file:
             for line in file:
                 line_array = line.strip().split("\t")
-                ai_score = float(line_array[6].split(" ")[1]) * 1000
+                year = int(line_array[5])
+                year_index = int((year - 2021) / 2)
+                year_counts[year_index] += 1
+                if year_counts[year_index] > paper_limit_for_year:
+                    continue
+                ai_score = float(line_array[6].split(" ")[1]) * 10_000
                 author = line_array[0]
                 country = line_array[4]
                 journal = line_array[3]
-                year = int(line_array[5])
-                year_index = int((year - 2021) / 2)
                 if int(ai_score) > 9:
                     ai_score_bin[year_index][9] += 1
                 else:
                     ai_score_bin[year_index][int(ai_score)] += 1
                 if author_dict.get(author) is None:
                     author_dict[author] = True
+                if journal_dict.get(journal) is None:
+                    journal_dict[journal] = True
                 for country_index, country_array in enumerate(country_content_list):
                     if country in country_array:
                         if int(ai_score) > 9:
                             country_ai_scores[country_index][year_index][9] += 1
                         else:
                             country_ai_scores[country_index][year_index][int(ai_score)] += 1
+                for journal_index, journal_array in enumerate(journal_content_list):
+                    if journal in journal_array:
+                        if int(ai_score) > 9:
+                            journal_ai_scores[journal_index][year_index][9] += 1
+                        else:
+                            journal_ai_scores[journal_index][year_index][int(ai_score)] += 1
+    print("Overall")
     print(ai_score_bin[0])
     print(ai_score_bin[1])
     print(ai_score_bin[2])
     print(len(author_dict))
-    for country in country_ai_scores:
-        print(country)
+    print("Region")
+    for country_score in country_ai_scores:
+        print(country_score)
+    print("Field") 
+    for journal_score in journal_ai_scores:
+        print(journal_score)
+    # with open("./data/journal_list", "a", encoding="utf-8") as f:
+    #     for key in journal_dict.keys():
+    #         print(key)
+    #         f.write(key + "\n")
     return
 
 
