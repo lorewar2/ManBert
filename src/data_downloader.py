@@ -20,6 +20,7 @@ def display_all_required_info():
     #print(2025, "paper count: ", pyalex.Works().filter(publication_year = 2025, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
     # load the journal fields
     fields = ["Life Sciences", "Physical Sciences", "Engineering & Technology", "Social Sciences", "Humanities", "Business & Economics", "Multidisciplinary"]
+    stem_non_stem = [["Life Sciences", "Physical Sciences", "Engineering & Technology"], ["Social Sciences", "Humanities", "Business & Economics"]]
     journal_content_list = [[], [], [], [], [], [], []]
     with open(JOURNAL_FIELD_PATH, 'r', encoding="utf-8") as file:
         for line in file:
@@ -34,18 +35,19 @@ def display_all_required_info():
                     "GW", "KE", "LS", "LR", "LY", "MG", "MW", "ML", "MR", "MU", "MA", "MZ",
                     "NA", "NE", "NG", "RW", "ST", "SN", "SC", "SL", "SO", "ZA", "SS", "SD",
                     "TZ", "TG", "TN", "UG", "ZM", "ZW"],
-                    ["CA", "US", "MX"], # North_America 
-                    ["BZ", "CR", "SV", "GT", "HN", "NI", "PA", "AG", "BS", "BB", "CU", "DM", "DO", "GD", "HT", "JM", "KN", "LC", "VC", "TT"], # Central_America/Caribbean
-                    ["AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE"], # South_America
+                    ["CA", "US", "MX", "PR", "GL", "MQ"], # North_America 
+                    ["BZ", "CR", "SV", "GT", "HN", "NI", "PA", "AG", "BS", "BB", "CU", "DM", "DO", "GD", "HT", "JM", "KN", "LC", "VC", "TT", "GP", "XK", "CW"], # Central_America/Caribbean
+                    ["AR", "BO", "BR", "CL", "CO", "EC", "GY", "PY", "PE", "SR", "UY", "VE", "GF"], # South_America
                     ["AF", "AM", "AZ", "BH", "BD", "BT", "BN", "KH", "CN", "CY", "GE", "IN", "ID", "IR", "IQ", "IL", "JP", "JO", "KZ", "KW", 
                     "KG", "LA", "LB", "MY", "MV", "MN", "MM", "NP", "KP", "OM", "PK", "PH", "QA", "SA", "SG", "KR", "LK", "SY", "TW", "TJ", 
-                    "TH", "TL", "TR", "TM", "AE", "UZ", "VN", "YE"], # Asia
+                    "TH", "TL", "TR", "TM", "AE", "UZ", "VN", "YE", "HK", "PS", "MO"], # Asia
                     ["AL", "AD", "AT", "BY", "BE", "BA", "BG", "HR", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IS",  # Europe 
                     "IE", "IT", "LV", "LI", "LT", "LU", "MT", "MD", "MC", "ME", "NL", "MK", "NO", "PL", "PT", "RO", "RU", 
-                    "SM", "RS", "SK", "SI", "ES", "SE", "CH", "UA", "GB", "VA"], 
-                    ["AU", "FJ", "KI", "MH", "FM", "NR", "NZ", "PW", "PG", "WS", "SB", "TO", "TV", "VU"]] # Oceania
+                    "SM", "RS", "SK", "SI", "ES", "SE", "CH", "UA", "GB", "VA", "XK", "GI"], 
+                    ["AU", "FJ", "KI", "MH", "FM", "NR", "NZ", "PW", "PG", "WS", "SB", "TO", "TV", "VU", "MP", "PF", "NC"]] # Oceania
     ai_score_bin_empty = [[0] * 10, [0] * 10, [0] * 10]
     ai_score_bin = copy.deepcopy(ai_score_bin_empty)
+    stem_region_ai_scores = [[copy.deepcopy(ai_score_bin_empty) for _ in range(7)], [copy.deepcopy(ai_score_bin_empty) for _ in range(7)]]
     country_ai_scores = [copy.deepcopy(ai_score_bin_empty) for _ in range(7)]
     journal_ai_scores = [copy.deepcopy(ai_score_bin_empty) for _ in range(7)]
     journal_dict = dict()
@@ -74,18 +76,39 @@ def display_all_required_info():
                     author_dict[author] = True
                 if journal_dict.get(journal) is None:
                     journal_dict[journal] = True
-                for country_index, country_array in enumerate(country_content_list):
-                    if country in country_array:
+                # find the country index
+                country_index = 0
+                country_found = False
+                for index, country_list in enumerate(country_content_list):
+                    if country in country_list:
+                        country_index = index
+                        country_found = True
+                if country_found == False and country != "None":
+                    print(country)
+                # find the journal index 
+                for index, journal_list in enumerate(journal_content_list):
+                    if journal in journal_list:
+                        journal_index = index
+                
+                if int(ai_score) > 9:
+                    if country_found == True:
+                        country_ai_scores[country_index][year_index][9] += 1
+                    journal_ai_scores[journal_index][year_index][9] += 1
+                else:
+                    if country_found == True:
+                        country_ai_scores[country_index][year_index][int(ai_score)] += 1
+                    journal_ai_scores[journal_index][year_index][int(ai_score)] += 1
+                if country_found == True:
+                    if journal_index > 2 and journal_index != 6:
                         if int(ai_score) > 9:
-                            country_ai_scores[country_index][year_index][9] += 1
+                            stem_region_ai_scores[1][country_index][year_index][9] += 1
                         else:
-                            country_ai_scores[country_index][year_index][int(ai_score)] += 1
-                for journal_index, journal_array in enumerate(journal_content_list):
-                    if journal in journal_array:
+                            stem_region_ai_scores[1][country_index][year_index][int(ai_score)] += 1
+                    elif journal_index != 6:
                         if int(ai_score) > 9:
-                            journal_ai_scores[journal_index][year_index][9] += 1
+                            stem_region_ai_scores[0][country_index][year_index][9] += 1
                         else:
-                            journal_ai_scores[journal_index][year_index][int(ai_score)] += 1
+                            stem_region_ai_scores[0][country_index][year_index][int(ai_score)] += 1
     print("Overall")
     print(ai_score_bin[0])
     print(ai_score_bin[1])
@@ -97,6 +120,11 @@ def display_all_required_info():
     print("Field") 
     for journal_score in journal_ai_scores:
         print(journal_score)
+    print("STEM NON STEM")
+    for stem_array in stem_region_ai_scores:
+        print("Stem/NonStem")
+        for region_score in stem_array:
+            print(region_score)
     # with open("./data/journal_list", "a", encoding="utf-8") as f:
     #     for key in journal_dict.keys():
     #         print(key)
