@@ -27,7 +27,13 @@ def main():
             start = True
         current_file = line.split("\t")[6]
         print(current_file)
+<<<<<<< HEAD
         if current_file == "fail" or start == False:
+=======
+        if current_file == "fail":
+            continue
+        if count < to_be_skipped:
+>>>>>>> 0fa7cbe (update ai detect resume)
             count += 1
             continue
         extracted_text = extract_text_from_pdf_xml(current_file)
