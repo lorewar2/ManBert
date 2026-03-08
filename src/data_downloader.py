@@ -10,7 +10,7 @@ DOI_SAVE_PATH = "./data/doi_list.txt"
 INTERSECT_ID_SAVE_PATH = "./data/intersect_list.txt"
 PAPER_INFO_SAVE_PATH = "./data/paper_info_list.txt"
 PAPER_DOWNLOAD_SAVE_PATH = "./data/paper_download_list.txt"
-AI_INFO_SAVE_PATH = "./data/hundred_k_list.txt"
+AI_INFO_SAVE_PATH = "./data/ai_info_list.txt"
 JOURNAL_FIELD_PATH = "./data/journal_list_with_fields.txt"
 TOKEN_PATH = "./data/token.txt"
 
@@ -53,7 +53,9 @@ def display_all_required_info():
     journal_dict = dict()
     author_dict = dict()
     year_counts = [0, 0, 0]
-    paper_limit_for_year = 34_000
+    ai_over_all_counts = [0] * 200
+    non_ai_over_all_counts = [0] * 200
+    paper_limit_for_year = 150_000
     if os.path.isfile(AI_INFO_SAVE_PATH):
         # open the file and load up the dict
         with open(AI_INFO_SAVE_PATH, 'r', encoding="utf-8") as file:
@@ -89,26 +91,31 @@ def display_all_required_info():
                 for index, journal_list in enumerate(journal_content_list):
                     if journal in journal_list:
                         journal_index = index
-                
-                if int(ai_score) > 9:
-                    if country_found == True:
-                        country_ai_scores[country_index][year_index][9] += 1
-                    journal_ai_scores[journal_index][year_index][9] += 1
-                else:
-                    if country_found == True:
-                        country_ai_scores[country_index][year_index][int(ai_score)] += 1
-                    journal_ai_scores[journal_index][year_index][int(ai_score)] += 1
-                if country_found == True:
-                    if journal_index > 2 and journal_index != 6:
-                        if int(ai_score) > 9:
-                            stem_region_ai_scores[1][country_index][year_index][9] += 1
-                        else:
-                            stem_region_ai_scores[1][country_index][year_index][int(ai_score)] += 1
-                    elif journal_index != 6:
-                        if int(ai_score) > 9:
-                            stem_region_ai_scores[0][country_index][year_index][9] += 1
-                        else:
-                            stem_region_ai_scores[0][country_index][year_index][int(ai_score)] += 1
+                overall_index = (year_index + 1) * (country_index + 1) * (journal_index + 1)
+                if ai_score > 0.9:
+                    ai_over_all_counts[overall_index] += 1
+                elif ai_score < 0.1:
+                    non_ai_over_all_counts[overall_index] += 1
+                #print(overall_index)
+                # if int(ai_score) > 9:
+                #     if country_found == True:
+                #         country_ai_scores[country_index][year_index][9] += 1
+                #     journal_ai_scores[journal_index][year_index][9] += 1
+                # else:
+                #     if country_found == True:
+                #         country_ai_scores[country_index][year_index][int(ai_score)] += 1
+                #     journal_ai_scores[journal_index][year_index][int(ai_score)] += 1
+                # if country_found == True:
+                #     if journal_index > 2 and journal_index != 6:
+                #         if int(ai_score) > 9:
+                #             stem_region_ai_scores[1][country_index][year_index][9] += 1
+                #         else:
+                #             stem_region_ai_scores[1][country_index][year_index][int(ai_score)] += 1
+                #     elif journal_index != 6:
+                #         if int(ai_score) > 9:
+                #             stem_region_ai_scores[0][country_index][year_index][9] += 1
+                #         else:
+                #             stem_region_ai_scores[0][country_index][year_index][int(ai_score)] += 1
     print("Overall")
     print(ai_score_bin[0])
     print(ai_score_bin[1])
@@ -118,17 +125,17 @@ def display_all_required_info():
     for country_score in country_ai_scores:
         print(country_score)
     print("Field") 
-    for journal_score in journal_ai_scores:
-        print(journal_score)
-    print("STEM NON STEM")
-    for stem_array in stem_region_ai_scores:
-        print("Stem/NonStem")
-        for region_score in stem_array:
-            print(region_score)
-    # with open("./data/journal_list", "a", encoding="utf-8") as f:
-    #     for key in journal_dict.keys():
-    #         print(key)
-    #         f.write(key + "\n")
+    # for journal_score in journal_ai_scores:
+    #     print(journal_score)
+    # print("STEM NON STEM")
+    # for stem_array in stem_region_ai_scores:
+    #     print("Stem/NonStem")
+    #     for region_score in stem_array:
+    #         print(region_score)
+    with open("./data/overall_ai_non_ai.txt", "a", encoding="utf-8") as f:
+        for index, (ai, non_ai) in enumerate(zip(ai_over_all_counts, non_ai_over_all_counts)):
+            print(index, ai, non_ai)
+            f.write(str(index) + "," + str(ai) + "," + str(non_ai) + "\n")
     return
 
 
