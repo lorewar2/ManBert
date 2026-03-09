@@ -55,7 +55,9 @@ def display_all_required_info():
     year_counts = [0, 0, 0]
     ai_over_all_counts = [0] * 200
     non_ai_over_all_counts = [0] * 200
-    paper_limit_for_year = 150_000
+    paper_limit_for_year = 200_000
+    no_country_count = 0
+    no_journal_count = 0
     if os.path.isfile(AI_INFO_SAVE_PATH):
         # open the file and load up the dict
         with open(AI_INFO_SAVE_PATH, 'r', encoding="utf-8") as file:
@@ -81,6 +83,8 @@ def display_all_required_info():
                 # find the country index
                 country_index = 0
                 country_found = False
+                journal_index = 0
+                journal_found = False
                 for index, country_list in enumerate(country_content_list):
                     if country in country_list:
                         country_index = index
@@ -91,7 +95,14 @@ def display_all_required_info():
                 for index, journal_list in enumerate(journal_content_list):
                     if journal in journal_list:
                         journal_index = index
-                overall_index = (year_index + 1) * (country_index + 1) * (journal_index + 1)
+                        journal_found = True
+                if country_found == False:
+                    no_country_count += 1
+                    continue
+                if journal_found == False:
+                    no_journal_count += 1
+                    continue
+                overall_index = (year_index * 7 * 7) + (journal_index * 7) + (country_index)
                 if ai_score > 0.9:
                     ai_over_all_counts[overall_index] += 1
                 elif ai_score < 0.1:
@@ -116,15 +127,17 @@ def display_all_required_info():
                 #             stem_region_ai_scores[0][country_index][year_index][9] += 1
                 #         else:
                 #             stem_region_ai_scores[0][country_index][year_index][int(ai_score)] += 1
+    print(no_journal_count)
+    print(no_country_count)
     print("Overall")
     print(ai_score_bin[0])
     print(ai_score_bin[1])
     print(ai_score_bin[2])
     print(len(author_dict))
-    print("Region")
-    for country_score in country_ai_scores:
-        print(country_score)
-    print("Field") 
+    # print("Region")
+    # for country_score in country_ai_scores:
+    #     print(country_score)
+    # print("Field") 
     # for journal_score in journal_ai_scores:
     #     print(journal_score)
     # print("STEM NON STEM")
