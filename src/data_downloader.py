@@ -164,11 +164,15 @@ def retrieve_pdf_from_list_of_papers():
                 continue
             array = document_info[document_key].split("\t")
             doi = array[1]
+            year = array[-1]
             paper_data = {'doi': doi[16:]}
-            file_path_pdf = "./data/papers/" + str(paper_index) + ".pdf"
-            file_path_xml = "./data/papers/" + str(paper_index) + ".xml"
+            file_path_pdf = "/data1/hifi_consensus/papers/" + str(paper_index) + ".pdf"
+            file_path_xml = "/data1/hifi_consensus/papers/" + str(paper_index) + ".xml"
+            if year != "2025":
+                continue
+            print(year)
             # try to obtain using the doi
-            save_pdf(paper_data, filepath=file_path_pdf, api_keys=TOKEN_PATH)
+            save_pdf(paper_data, filepath=file_path_pdf, api_keys="./data/tokens.txt")
             # check if file exists, if does not put fail, otherwise put file path
             if os.path.isfile(file_path_pdf):
                 file_path = file_path_pdf
@@ -177,7 +181,7 @@ def retrieve_pdf_from_list_of_papers():
             else:
                 file_path = "fail"
             with open(PAPER_DOWNLOAD_SAVE_PATH, "a", encoding="utf-8") as f:
-                f.write(document_info[document_key] + "\t" + file_path + "\n")
+                    f.write(document_info[document_key] + "\t" + file_path + "\n")
         paper_index += 1
     return
 
