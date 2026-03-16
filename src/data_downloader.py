@@ -3,7 +3,7 @@ import pyalex
 import os
 import random
 import copy
-#from paperscraper.pdf import save_pdf
+from paperscraper.pdf import save_pdf
 #pip install git+https://github.com/titipata/scipdf_parser
 
 DOI_SAVE_PATH = "./data/doi_list.txt"
@@ -13,6 +13,31 @@ PAPER_DOWNLOAD_SAVE_PATH = "./data/paper_download_list.txt"
 AI_INFO_SAVE_PATH = "./data/ai_info_list.txt"
 JOURNAL_FIELD_PATH = "./data/journal_list_with_fields.txt"
 TOKEN_PATH = "./data/token.txt"
+
+
+def download_before_ai():
+    doi_list = []
+    # get random 2006 papers from openalex
+    seed = 0
+    pages = pyalex.Works().sample(2_000, seed).filter(publication_year = 2006, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).select("doi").paginate(method="page", per_page=200)
+    page_number = 0
+    for page in pages:
+        page_number += 1
+        for work in page:
+            # save in list the dois
+            doi_list.append(work["doi"])
+    # download the paper using doi
+    for paper_index, doi in enumerate(doi_list):
+        print(paper_index, doi)
+        if doi == None:
+            continue
+        paper_data = {'doi': doi[16:]}
+        file_path_pdf = "./data/before_ai/" + str(paper_index) + ".pdf"
+        # try to obtain using the doi
+        save_pdf(paper_data, filepath=file_path_pdf, api_keys="./data/tokens.txt")
+        with open("before_ai_doi.txt", "a") as f:
+            f.write(f"{paper_index}\t{doi}\n")
+    return
 
 def display_all_required_info():
     #print(2021, "paper count: ", pyalex.Works().filter(publication_year = 2021, has_oa_accepted_or_published_version = True, language = "en", **{"primary_location.source.type":"journal"}).count())
@@ -350,7 +375,8 @@ def main():
     #find_intersecting_authors_2021_2023_2025()
     #make_list_of_papers_authors()
     #retrieve_pdf_from_list_of_papers()
-    display_all_required_info()
+    #display_all_required_info()
+    download_before_ai()
     return 0
 
 if __name__ == "__main__":  
