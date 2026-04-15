@@ -3,6 +3,9 @@ import pyalex
 import os
 import random
 import copy
+import csv
+import math
+import shutil
 from paperscraper.pdf import save_pdf
 #pip install git+https://github.com/titipata/scipdf_parser
 
@@ -371,12 +374,158 @@ def get_and_save_dois():
             f.writelines(doi_list)
     return
 
+def rename_files_from_tsv(tsv_file, directory):
+    with open(tsv_file, newline='', encoding='utf-8') as file:
+        reader = csv.reader(file, delimiter='\t')
+        for row in reader:
+            if len(row) < 2:
+                continue  # skip invalid rows
+            old_name = row[-1].split("/")[-1]
+            new_name = sanitize_filename(row[1])
+            old_path = os.path.join(directory, old_name)
+            # preserve extension
+            ext = os.path.splitext(old_name)[1]
+            new_path = os.path.join(directory, new_name + ext)
+
+            try:
+                os.rename(old_path, new_path)
+                print(f"Renamed: {old_name} -> {new_name + ext}")
+            except FileNotFoundError:
+                print(f"File not found: {old_name}")
+            except Exception as e:
+                print(f"Error renaming {old_name}: {e}")
+
+def sanitize_filename(name):
+    return name.replace("/", "_").replace(":", "_").strip()
+
+
+def collect_and_rename_files(base_dir, output_dir, csv_path):
+    priority_order = ["Generated", "Before", "Statement"]
+
+    os.makedirs(output_dir, exist_ok=True)
+    all_files = []
+    def sorted_dirs(dirs):
+        return sorted(dirs, key=lambda d: (
+            priority_order.index(d) if d in priority_order else len(priority_order),
+            d
+        ))
+
+    for root, dirs, files in os.walk(base_dir):
+        dirs[:] = sorted_dirs(dirs)  # modify in-place for priority traversal
+
+        for file in files:
+            full_path = os.path.join(root, file)
+            all_files.append(full_path)
+            print(full_path)
+
+    # Copy and rename files
+    mapping = []
+    counter = 1
+
+    for file_path in all_files:
+        ext = os.path.splitext(file_path)[1]
+        new_name = f"{counter}{ext}"
+        new_path = os.path.join(output_dir, new_name)
+
+        shutil.copy2(file_path, new_path)
+
+        mapping.append([new_name, sanitize_filename("_".join(file_path.split("/")[2:]))])
+        counter += 1
+
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["new_name", "original_path"])
+        writer.writerows(mapping)
+
+    print(f"\nDone! {len(mapping)} files processed.")
+
+def split_and_copy_files(csv_path, output_dir, seed=42):
+    random.seed(seed)
+
+    # Create output folders
+    train_dir = os.path.join(output_dir, "train")
+    val_dir = os.path.join(output_dir, "val")
+    test_dir = os.path.join(output_dir, "test")
+
+    os.makedirs(train_dir, exist_ok=True)
+    os.makedirs(val_dir, exist_ok=True)
+    os.makedirs(test_dir, exist_ok=True)
+
+    # Read CSV
+    with open(csv_path, newline='', encoding='utf-8') as f:
+        reader = list(csv.reader(f))
+
+    header = reader[0]
+    data = reader[1:]  # skip header
+
+    # Split into chunks
+    chunks = [
+        data[:256],
+        data[256:768],
+        data[768:1024]
+    ]
+
+    train, val, test = [], [], []
+
+    for chunk in chunks:
+        random.shuffle(chunk)
+
+        n = len(chunk)
+        n_train = math.floor(0.8 * n)
+        n_val = math.floor(0.1 * n)
+
+        train += chunk[:n_train]
+        val += chunk[n_train:n_train + n_val]
+        test += chunk[n_train + n_val:]
+
+    def copy_files(split_data, target_dir):
+        for new_name, _old_path in split_data:
+            old_path = "./collected_files/{}".format(new_name)
+            if not os.path.exists(old_path):
+                print(f"Missing file: {old_path}")
+                continue
+
+            dest_path = os.path.join(target_dir, new_name)
+            shutil.copy2(old_path, dest_path)
+
+    def write_csv(path, rows):
+        with open(path, "w", newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(header)
+            writer.writerows(rows)
+
+    # Copy files
+    copy_files(train, train_dir)
+    copy_files(val, val_dir)
+    copy_files(test, test_dir)
+
+    # Write CSVs
+    write_csv(os.path.join(output_dir, "train.csv"), train)
+    write_csv(os.path.join(output_dir, "val.csv"), val)
+    write_csv(os.path.join(output_dir, "test.csv"), test)
+
+    print(f"Done!")
+    print(f"Train: {len(train)} files")
+    print(f"Val: {len(val)} files")
+    print(f"Test: {len(test)} files")
+
 def main():
     #find_intersecting_authors_2021_2023_2025()
     #make_list_of_papers_authors()
     #retrieve_pdf_from_list_of_papers()
     #display_all_required_info()
-    download_before_ai()
+    #download_before_ai()
+    #adjust_entries_for_ai_dataset()
+    #rename_files_from_tsv("modeling_dataset/with_ai_doi.txt", "modeling_dataset/Statement")
+    split_and_copy_files(
+        csv_path="file_mapping.csv",
+        output_dir="dataset_split"
+    )
+    # collect_and_rename_files(
+    #     base_dir="./modeling_dataset/", 
+    #     output_dir="collected_files",
+    #     csv_path="file_mapping.csv"
+    # )
     return 0
 
 if __name__ == "__main__":  
